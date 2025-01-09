@@ -96,14 +96,13 @@ enc_wchar_pointer(const char *utf8, struct encoded_wchars *encoded_out)
     size_t utf16len, num_wchars;
     uint8_t *utf16;
 
-    k5_buf_init_dynamic(&b);
-
     ret = k5_utf8_to_utf16le(utf8, &utf16, &utf16len);
     if (ret)
         return ret;
 
     num_wchars = utf16len / 2;
 
+    k5_buf_init_dynamic(&b);
     k5_buf_add_uint32_le(&b, num_wchars + 1);
     k5_buf_add_uint32_le(&b, 0);
     k5_buf_add_uint32_le(&b, num_wchars);
@@ -243,7 +242,7 @@ ndr_enc_delegation_info(struct pac_s4u_delegation_info *in, krb5_data *out)
 {
     krb5_error_code ret;
     size_t i;
-    struct k5buf b;
+    struct k5buf b = EMPTY_K5BUF;
     struct encoded_wchars pt_encoded = { 0 }, *tss_encoded = NULL;
     uint32_t pointer = 0;
 

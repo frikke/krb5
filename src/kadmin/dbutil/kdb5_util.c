@@ -74,7 +74,7 @@ int exit_status = 0;
 krb5_context util_context;
 kadm5_config_params global_params;
 
-void usage()
+void usage(void)
 {
     fprintf(stderr,
             _("Usage: kdb5_util [-r realm] [-d dbname] "
@@ -160,7 +160,7 @@ cmd_lookup(char *name)
 #define ARG_VAL (--argc > 0 ? (koptarg = *(++argv)) : (char *)(usage(), NULL))
 
 char **db5util_db_args = NULL;
-int    db5util_db_args_size = 0;
+size_t db5util_db_args_size = 0;
 
 static void
 extended_com_err_fn(const char *myprog, errcode_t code, const char *fmt,
@@ -367,7 +367,7 @@ main(int argc, char *argv[])
  * program is run).
  */
 static int
-open_db_and_mkey()
+open_db_and_mkey(void)
 {
     krb5_error_code retval;
     krb5_data scratch, pwd, seed;
@@ -489,7 +489,7 @@ open_db_and_mkey()
 #endif
 
 int
-quit()
+quit(void)
 {
     krb5_error_code retval;
     static krb5_boolean finished = 0;
@@ -600,6 +600,9 @@ add_random_key(int argc, char **argv)
         exit_status++;
         return;
     }
+
+    dbent->mask |= KADM5_ATTRIBUTES | KADM5_KEY_DATA | KADM5_TL_DATA;
+
     ret = krb5_db_put_principal(util_context, dbent);
     krb5_db_free_principal(util_context, dbent);
     if (ret) {
