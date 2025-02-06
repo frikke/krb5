@@ -98,6 +98,22 @@ _krb5_use_dns_realm(krb5_context context)
                          DEFAULT_LOOKUP_REALM);
 }
 
+static krb5_error_code
+get_sitename(krb5_context context, const krb5_data *realm, char **out)
+{
+    krb5_error_code ret;
+    char *realmstr;
+
+    *out = NULL;
+    realmstr = k5memdup0(realm->data, realm->length, &ret);
+    if (realmstr == NULL)
+        return ret;
+    ret = profile_get_string(context->profile, KRB5_CONF_REALMS,
+                             realmstr, KRB5_CONF_SITENAME, NULL, out);
+    free(realmstr);
+    return ret;
+}
+
 #endif /* KRB5_DNS_LOOKUP */
 
 /* Free up everything pointed to by the serverlist structure, but don't
@@ -244,7 +260,8 @@ locate_srv_conf_1(krb5_context context, const krb5_data *realm,
     char **hostlist = NULL, *realmstr = NULL, *host = NULL;
     const char *hostspec;
     krb5_error_code code;
-    int i, default_port;
+    size_t i;
+    int default_port;
 
     Tprintf("looking in krb5.conf for realm %s entry %s; ports %d,%d\n",
             realm->data, name, udpport);
@@ -278,6 +295,23 @@ locate_srv_conf_1(krb5_context context, const krb5_data *realm,
         hostspec = hostlist[i];
         Tprintf("entry %d is '%s'\n", i, hostspec);
 
+#ifndef _WIN32
+        if (hostspec[0] == '/') {
+            struct sockaddr_un sun = { 0 };
+
+            sun.sun_family = AF_UNIX;
+            if (strlcpy(sun.sun_path, hostspec, sizeof(sun.sun_path)) >=
+                sizeof(sun.sun_path)) {
+                code = ENAMETOOLONG;
+                goto cleanup;
+            }
+            code = add_addr_to_list(serverlist, UNIXSOCK, AF_UNIX, sizeof(sun),
+                                    (struct sockaddr *)&sun);
+            if (code)
+                goto cleanup;
+            continue;
+        }
+#endif
         parse_uri_if_https(hostspec, &this_transport, &hostspec, &uri_path);
 
         default_port = (this_transport == HTTPS) ? 443 : udpport;
@@ -328,9 +362,14 @@ locate_srv_dns_1(krb5_context context, const krb5_data *realm,
     struct srv_dns_entry *head = NULL, *entry = NULL;
     krb5_error_code code = 0;
     k5_transport transport;
+    char *sitename;
 
+    code = get_sitename(context, realm, &sitename);
+    if (code)
+        return code;
     code = krb5int_make_srv_query_realm(context, realm, service, protocol,
-                                        &head);
+                                        sitename, &head);
+    free(sitename);
     if (code)
         return 0;
 
@@ -407,7 +446,8 @@ module_locate_server(krb5_context ctx, const krb5_data *realm,
     struct krb5plugin_service_locate_ftable *vtbl = NULL;
     void **ptrs;
     char *realmz;               /* NUL-terminated realm */
-    int socktype, i;
+    size_t i;
+    int socktype;
     struct module_callback_data cbdata = { 0, };
     const char *msg;
 
@@ -616,11 +656,15 @@ locate_uri(krb5_context context, const krb5_data *realm,
     krb5_error_code ret;
     k5_transport transport, host_trans;
     struct srv_dns_entry *answers, *entry;
-    char *host;
+    char *host, *sitename;
     const char *host_field, *path;
     int port, def_port, primary;
 
-    ret = k5_make_uri_query(context, realm, req_service, &answers);
+    ret = get_sitename(context, realm, &sitename);
+    if (ret)
+        return ret;
+    ret = k5_make_uri_query(context, realm, req_service, sitename, &answers);
+    free(sitename);
     if (ret || answers == NULL)
         return ret;
 

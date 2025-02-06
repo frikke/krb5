@@ -182,45 +182,6 @@ krb5_error_code cms_signeddata_verify
 		    receives whether message is signed */
 
 /*
- * this function creates a CMS message where eContentType is EnvelopedData
- */
-krb5_error_code cms_envelopeddata_create
-	(krb5_context context,				/* IN */
-	pkinit_plg_crypto_context plg_cryptoctx,	/* IN */
-	pkinit_req_crypto_context req_cryptoctx,	/* IN */
-	pkinit_identity_crypto_context id_cryptoctx,	/* IN */
-	krb5_preauthtype pa_type,			/* IN */
-	unsigned char *key_pack,			/* IN
-		    contains DER encoded ReplyKeyPack */
-	unsigned int key_pack_len,			/* IN
-		    contains length of key_pack */
-	unsigned char **envel_data,			/* OUT
-		    receives DER encoded encKeyPack */
-	unsigned int *envel_data_len);			/* OUT
-		    receives length of envel_data */
-
-/*
- * this function creates a CMS message where eContentType is EnvelopedData
- */
-krb5_error_code cms_envelopeddata_verify
-	(krb5_context context,				/* IN */
-	pkinit_plg_crypto_context plg_cryptoctx,	/* IN */
-	pkinit_req_crypto_context req_cryptoctx,	/* IN */
-	pkinit_identity_crypto_context id_cryptoctx,	/* IN */
-	krb5_preauthtype pa_type,			/* IN */
-	int require_crl_checking,			/* IN
-		    specifies whether CRL checking should be
-		    strictly enforced */
-	unsigned char *envel_data,			/* IN
-		    contains DER encoded encKeyPack */
-	unsigned int envel_data_len,			/* IN
-		    contains length of envel_data */
-	unsigned char **signed_data,			/* OUT
-		    receives ReplyKeyPack */
-	unsigned int *signed_data_len);			/* OUT
-		    receives length of signed_data */
-
-/*
  * This function retrieves the signer's identity, in a form that could
  * be passed back in to a future invocation of this module as a candidate
  * client identity location.
@@ -282,22 +243,6 @@ krb5_error_code crypto_check_cert_eku
 		    should be accepted or not (see above) */
 	int *eku_valid);				/* OUT
 		    receives non-zero if an acceptable EKU was found */
-
-/*
- * this functions takes in generated DH secret key and converts
- * it in to a kerberos session key. it takes into the account the
- * enc type and then follows the procedure specified in the RFC p 22.
- */
-krb5_error_code pkinit_octetstring2key
-	(krb5_context context,				/* IN */
-	krb5_enctype etype,				/* IN
-		    specifies the enc type */
-	unsigned char *key,				/* IN
-		    contains the DH secret key */
-	unsigned int key_len,				/* IN
-		    contains length of key */
-	krb5_keyblock * krb5key);			/* OUT
-		    receives kerberos session key */
 
 /*
  * this function implements clients first part of the DH protocol.
@@ -591,15 +536,11 @@ krb5_error_code pkinit_identity_set_prompter
 	void *prompter_data);				/* IN */
 
 krb5_error_code
-pkinit_alg_agility_kdf(krb5_context context,
-                       krb5_data *secret,
-                       krb5_data *alg_oid,
-                       krb5_const_principal party_u_info,
-                       krb5_const_principal party_v_info,
-                       krb5_enctype enctype,
-                       krb5_data *as_req,
-                       krb5_data *pk_as_rep,
-                       krb5_keyblock *key_block);
+pkinit_kdf(krb5_context context, krb5_data *secret, const krb5_data *alg_oid,
+	   krb5_const_principal party_u_info,
+	   krb5_const_principal party_v_info, krb5_enctype enctype,
+	   const krb5_data *as_req, const krb5_data *pk_as_rep,
+	   krb5_keyblock *key_block);
 
 extern const krb5_data sha1_id;
 extern const krb5_data sha256_id;

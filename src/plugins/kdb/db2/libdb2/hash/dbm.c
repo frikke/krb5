@@ -95,7 +95,7 @@ kdb2_fetch(datum key)
 }
 
 datum
-kdb2_firstkey()
+kdb2_firstkey(void)
 {
 	datum item;
 
@@ -143,7 +143,7 @@ kdb2_store(datum key, datum dat)
 }
 
 static void
-no_open_db()
+no_open_db(void)
 {
 	(void)fprintf(stderr, "dbm: no open database.\n");
 }

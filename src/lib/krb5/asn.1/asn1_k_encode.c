@@ -250,7 +250,7 @@ decode_krb5_flags(const taginfo *t, const uint8_t *asn1, size_t len, void *val)
         return ret;
     /* Copy up to 32 bits into f, starting at the most significant byte. */
     for (i = 0; i < blen && i < 4; i++)
-        f |= bits[i] << (8 * (3 - i));
+        f |= (uint32_t)bits[i] << (8 * (3 - i));
     *(krb5_flags *)val = f;
     free(bits);
     return 0;
@@ -1092,7 +1092,7 @@ DEFOPTIONALEMPTYTYPE(opt_ptr_seqof_princ_plus_realm,
                      ptr_seqof_princ_plus_realm);
 
 /* First context tag is 1, not 0. */
-DEFFIELD(iakerb_header_1, krb5_iakerb_header, target_realm, 1, ostring_data);
+DEFFIELD(iakerb_header_1, krb5_iakerb_header, target_realm, 1, utf8_data);
 DEFFIELD(iakerb_header_2, krb5_iakerb_header, cookie, 2, opt_ostring_data_ptr);
 static const struct atype_info *iakerb_header_fields[] = {
     &k5_atype_iakerb_header_1, &k5_atype_iakerb_header_2

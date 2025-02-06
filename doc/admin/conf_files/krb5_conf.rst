@@ -35,12 +35,6 @@ or::
         baz = quux
     }
 
-Placing a '\*' after the closing bracket of a section name indicates
-that the section is *final*, meaning that if the same section appears
-within a later file specified in **KRB5_CONFIG**, it will be ignored.
-A subsection can be marked as final by placing a '\*' after either the
-tag name or the closing brace.
-
 The krb5.conf file can include other files using either of the
 following directives at the beginning of a line::
 
@@ -57,6 +51,16 @@ independent of their parents, so each included file must begin with a
 section header.  Starting in release 1.17, files are read in
 alphanumeric order; in previous releases, they may be read in any
 order.
+
+Placing a '\*' after the closing bracket of a section name indicates
+that the section is *final*, meaning that if the same section appears
+again later, it will be ignored.  A subsection can be marked as final
+by placing a '\*' after either the tag name or the closing brace.  A
+relation can be marked as final by placing a '\*' after the tag name.
+Prior to release 1.22, only sections and subsections can be marked as
+final, and the flag only causes values to be ignored if they appear in
+later files specified in **KRB5_CONFIG**, not if they appear later
+within the same file or an included file.
 
 The krb5.conf file can specify that configuration should be obtained
 from a loadable module, rather than the file itself, using the
@@ -220,6 +224,12 @@ The libdefaults section may contain any of the following relations:
     it (besides the initial ticket request, which has no encrypted
     data), and anything the fake KDC sends will not be trusted without
     verification using some secret that it won't know.
+
+**dns_lookup_realm**
+    Indicate whether DNS TXT records should be used to map hostnames
+    to realm names for hostnames not listed in the [domain_realm]
+    section, and to determine the default realm if **default_realm**
+    is not set.  The default value is false.
 
 **dns_uri_lookup**
     Indicate whether DNS URI records should be used to locate the KDCs
@@ -520,20 +530,21 @@ following tags may be specified in the realm's subsection:
     been set to ``FILE:/tmp/my_proxy.pem``.
 
 **kdc**
-    The name or address of a host running a KDC for that realm.  An
-    optional port number, separated from the hostname by a colon, may
-    be included.  If the name or address contains colons (for example,
-    if it is an IPv6 address), enclose it in square brackets to
+    The name or address of a host running a KDC for the realm, or a
+    UNIX domain socket path of a locally running KDC.  An optional
+    port number, separated from the hostname by a colon, may be
+    included.  If the name or address contains colons (for example, if
+    it is an IPv6 address), enclose it in square brackets to
     distinguish the colon from a port separator.  For your computer to
     be able to communicate with the KDC for each realm, this tag must
     be given a value in each realm subsection in the configuration
     file, or there must be DNS SRV records specifying the KDCs.
 
 **kpasswd_server**
-    Points to the server where all the password changes are performed.
-    If there is no such entry, DNS will be queried (unless forbidden
-    by **dns_lookup_kdc**).  Finally, port 464 on the **admin_server**
-    host will be tried.
+    The location of the password change server for the realm, using
+    the same syntax as **kdc**.  If there is no such entry, DNS will
+    be queried (unless forbidden by **dns_lookup_kdc**).  Finally,
+    port 464 on the **admin_server** host will be tried.
 
 **master_kdc**
     The name for **primary_kdc** prior to release 1.19.  Its value is
@@ -546,6 +557,10 @@ following tags may be specified in the realm's subsection:
     primary KDC, in case the user's password has just been changed, and
     the updated database has not been propagated to the replica
     servers yet.  New in release 1.19.
+
+**sitename**
+    Specifies the name of the host's site for the purpose of DNS-based
+    KDC discovery for this realm.  New in release 1.22.
 
 **v4_instance_convert**
     This subsection allows the administrator to configure exceptions
